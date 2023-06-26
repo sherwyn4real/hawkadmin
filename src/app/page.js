@@ -4,6 +4,8 @@ import { useState } from 'react'
 // import { signIn } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import {Oval} from "react-loader-spinner";
+import { isLoggedIn } from '@/app/components/auth';
+
 
 
 export default function Home() {
@@ -14,6 +16,10 @@ export default function Home() {
     const [password, setPassword] = useState('')
     const [isLoading, setIsLoading] = useState('')
 
+    if(isLoggedIn())
+    {
+        router.push('/dashboard/vendors')
+    }
    
     const SubmitHandler= async (e)=>{
         e.preventDefault();
@@ -34,6 +40,7 @@ export default function Home() {
             const data = await response.json()
             console.log("Response is: ",data)
             localStorage.setItem('token', data.token)
+            localStorage.setItem('username',data.username)
             setIsLoading(false)
             router.push('/dashboard/vendors')
 

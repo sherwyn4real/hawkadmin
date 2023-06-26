@@ -25,6 +25,7 @@ const page = () => {
   //const router = useRouter()
   const [Vendors, setVendors] = useState([])
   const token = localStorage.getItem('token')
+  const username = localStorage.getItem('username')
   const url = "http://localhost:5000/user/get-all-vendor-verification"
 
   useEffect(() =>{
@@ -80,7 +81,7 @@ const handleVendorClick = (vendorid) =>{
     <div className='bg-gray-100 min-h-screen'>
     <div className='flex justify-between p-4'>
         <h2 className='text-gray-600'>Vendors Applying for verification</h2>
-        <h2 className='text-gray-600'>Welcome Back Bro</h2>
+        <h2 className='text-gray-600'>Welcome Back {username}</h2>
     </div>
     <div className='p-4'>
         <div className='w-full m-auto p-4 border rounded-lg bg-white'>

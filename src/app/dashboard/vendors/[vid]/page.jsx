@@ -1,11 +1,11 @@
 'use client'
 import React from 'react'
-import {BsPersonFill, BsThreeDotsVertical} from 'react-icons/bs'
 import { FcDocument } from "react-icons/fc";
 import { useRouter } from 'next/navigation'
 import { isLoggedIn } from '@/app/components/auth';
 import { useState, useEffect } from 'react';
 import { usePathname } from 'next/navigation';
+import {Oval} from "react-loader-spinner";
 //import { useParams } from 'next/navigation';
 
 function getDate(userDate){
@@ -26,10 +26,15 @@ const page = () => {
   //get the pathname and then slice to get the vendorid
   const pathname = usePathname();
   const vendorid =  pathname.slice(19)
+  var IDnumOfProds = ''
+  
   
 
   const [Vendors, setVendors] = useState([])
   const [MainVendor, setMainVendor] = useState([])
+  const [isVerified, setIsVerified] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
+  const [numOfProds, setnumOfProds] = useState(0)
 
   const token = localStorage.getItem('token')
   const url = "http://localhost:5000/user/get-all-vendor-verification"
@@ -58,32 +63,83 @@ const page = () => {
 
   },[])
 
+  async function getNumofProds()
+    {
+    const url = `http://localhost:5000/product/products/vendor/${IDnumOfProds}`
+    const options = {
+      method: "GET",
+      headers: {
+        Accept: "application/json",
+        "Content-Type": "application/json",
+        Authorization:token
+      },
+     }
+
+      try {
+          const response = await fetch(url,options)
+          const data = await response.json()
+          console.log("THE PRODUCT REQUEST IS",data)
+          setnumOfProds(data.products.length)
+                
+      } catch (error) {
+          console.log(error)
+      }
+      
+    }
+
   useEffect(()=>{
     for (let i = 0; i < Vendors.length; i++) {
-      console.log(vendorid,Vendors[i]._id)
                 if( vendorid == Vendors[i]._id){
                   setMainVendor([Vendors[i]])
+                  setIsVerified(Vendors[i].verified)
+                  IDnumOfProds = Vendors[i].user._id
+                  getNumofProds()
                   console.log("The ids are equal!!")
                   break
                 }
     }
 
+
   },[Vendors])
 
-  useEffect(()=>{
-    console.log("Main vendor is:",MainVendor)
-  },[MainVendor])
+
 
   
-  const totalDocuments = 3
-  const submittedDocuments = 3
-  const percentageSubmitted = (submittedDocuments / totalDocuments) * 100
+  // const totalDocuments = 3
+  // const submittedDocuments = 3
+  // const percentageSubmitted = (submittedDocuments / totalDocuments) * 100
 
   
-  function handleApproveVendor(){
-    console.log("clciked on approvedddd")
+  async function handleApproveVendor(){
+    
+    setIsLoading(true)
+    const checkid = MainVendor[0].user._id
+    console.log("IDNUMOFPROFSD is:",IDnumOfProds)
+    const url = `http://localhost:5000/user/vendor/verify/${checkid}`
+    const options = {
+      method: "PATCH",
+      headers: {
+        Accept: "application/json",
+        "Content-Type": "application/json",
+        Authorization:token
+      },
+      body: JSON.stringify({
+        verified:true
+    }),
   }
-  
+
+  try {
+      const response = await fetch(url,options)
+      const data = await response.json()
+      console.log("THE PATCH REQUEST IS",data)
+      setIsLoading(false)
+      setIsVerified(true)
+      
+  } catch (error) {
+      console.log(error)
+  }
+
+  }
 
   return (
     
@@ -97,9 +153,9 @@ const page = () => {
               <li key={vendor._id}>
                 <div className="text-center">
                 <img className="h-32 mx-auto rounded-full"
-                  src="https://avatars2.githubusercontent.com/u/24622175?s=60&amp;v=4" alt="Profile Picture"/>
+                  src={vendor.profile.avatar} alt="Profile Picture"/>
                 <h2 className="text-black text-xl font-semibold mt-4">{vendor.profile.name}</h2>
-                <p className="mt-2 text-gray-600">{vendor.gstNumber}</p>
+                <p className="mt-2 text-gray-600">GST Number: {vendor.gstNumber}</p>
                 </div>
 
                 <div className="mt-4">
@@ -108,12 +164,10 @@ const page = () => {
                   <p className="mt-2 text-gray-600">Address: {vendor.profile.address}</p>
                   <p className="mt-2 text-gray-600">Gender: {vendor.profile.gender}</p>
                   <p className="mt-2 text-gray-600">Date joined: {getDate(vendor.createdAt)}</p>
-                  <p className="mt-2 text-gray-600">Number of Products: 69</p>
+                  <p className="mt-2 text-gray-600">Number of Products: {numOfProds}</p>
                 </div>
-
             </li>
             )
-            
           })}
           </div>
             </div>
@@ -152,32 +206,24 @@ const page = () => {
                 })}
               </ul>
                 
-              
-              
                 {/* <p className="text-gray-600 mt-4">Document not submitted</p> */}
              
             </div>
-            <div className="flex items-center mt-8">
-              <div className="w-2/3">
-                <div className="bg-gray-200 h-4 rounded-full">
-                  <div
-                    className="bg-primary-500 h-4 rounded-full"
-                    style={{ width: `${percentageSubmitted}%` }}
-                  />
-                </div>
-              </div>
-              <div className="w-1/3 text-right ml-4">
-                <p className="text-gray-600">
-                  {submittedDocuments}/{totalDocuments} documents
-                </p>
-              </div>
-            </div>
+           
             <div className="mt-8">
-              <button
-                className="bg-primary-500 hover:bg-primary-600 text-white font-semibold py-2 px-4 rounded"
-                onClick={handleApproveVendor}>
-                Verify Vendor
+              
+
+              <button className="bg-primary-500 text-white font-semibold py-2 px-4 rounded" onClick={handleApproveVendor} disabled={isLoading || isVerified}>
+
+                  {isLoading ? (
+                          <Oval height={30} width={30} strokeWidth={5} strokeWidthSecondary={4} />
+                        ) : isVerified ? (
+                          'Vendor Verified!'
+                        ) : (
+                          'Verify Vendor'
+                      )}
               </button>
+              
             </div>
 
         </div>
